@@ -22,10 +22,16 @@ docs/       Architecture, compliance, SAP integration, BotPharma specs
 ## Quickstart (dev)
 
 ```bash
-# backend
+# backend (Postgres 17 + pgvector via Homebrew — no cloud account needed)
+brew install postgresql@17 pgvector
+brew services start postgresql@17
+psql postgres -c "CREATE USER pharmx WITH PASSWORD 'pharmx' CREATEDB;"
+psql postgres -c "CREATE DATABASE pharmx OWNER pharmx;"
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env  # DATABASE_URL → local Postgres
+python -m app.seed
 uvicorn app.main:app --reload --port 8000
 # API docs → http://localhost:8000/docs
 

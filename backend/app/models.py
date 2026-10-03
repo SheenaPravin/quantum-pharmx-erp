@@ -275,9 +275,26 @@ class CostRecord(Base, Mixin):
     margin = Column(Float, default=0)
 
 
+# ── RAG / knowledge base (BotPharma™ grounding) ──────────────────
+# Vector(768) on Postgres+pgvector; plain Text fallback on SQLite.
+try:
+    from pgvector.sqlalchemy import Vector as _Vector  # type: ignore
+    _Embedding = _Vector(768)
+except Exception:  # pgvector lib missing (SQLite fallback)
+    _Embedding = Text  # type: ignore
+
+
+class DocChunk(Base, Mixin):
+    __tablename__ = "doc_chunks"
+    source = Column(String, default="")  # e.g. SOP-014, spec PRD-PARA500, report id
+    title = Column(String, default="")
+    content = Column(Text, default="")
+    embedding = Column(_Embedding, nullable=True)  # set once LLM-gateway embeddings land
+
+
 ALL_MODELS = [Company, Plant, Warehouse, Material, StockLot, StockMove,
               RDProject, Experiment, Milestone, Patent, Product, Formulation,
               Supplier, Requisition, PurchaseOrder, GoodsReceipt, WorkOrder,
               Batch, Specification, Sample, QCResult, Deviation, CAPA,
               ChangeControl, Customer, SalesOrder, Registration, Submission,
-              CostRecord]
+              CostRecord, DocChunk]

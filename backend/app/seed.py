@@ -72,6 +72,10 @@ def run():
         expiry=date.today() + timedelta(days=900)))
     db.add(models.CostRecord(kind="batch", ref_id="B-2026-001", material_cost=8200,
         mfg_cost=3100, overhead=900, revenue=15000, margin=3800))
+    db.add(models.DocChunk(source="SOP-QC-014", title="OOS investigation procedure",
+        content="Any assay OOS result triggers quarantine of the batch, reviewer sign-off, laboratory investigation phase 1 within 5 business days, and CAPA if root cause is confirmed."))
+    db.add(models.DocChunk(source="SPEC-PRD-PARA500", title="Paracetamol 500mg assay spec",
+        content="Assay limits 95.0–105.0% of label claim by HPLC. Dissolution NLT 80% in 30 minutes. FEFO applies to all raw-material lots."))
     db.commit(); db.close()
     print("seed: done")
 

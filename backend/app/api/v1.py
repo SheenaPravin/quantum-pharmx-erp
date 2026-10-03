@@ -60,6 +60,7 @@ DOMAINS = [
     (models.Registration, "/regulatory/registrations", "Regulatory"),
     (models.Submission, "/regulatory/submissions", "Regulatory"),
     (models.CostRecord, "/costing", "Costing"),
+    (models.DocChunk, "/rag/documents", "RAG"),
 ]
 for _model, _prefix, _tag in DOMAINS:
     router.include_router(crud_router(_model, _prefix, _tag))
@@ -131,6 +132,19 @@ def chat(body: ChatIn, db: Session = Depends(get_db),
     out = svc.botpharma_reply(body.message, user.get("roles", []), db)
     auditlog.audit("BOT_CHAT", "botpharma", "-", user["email"], {"q": body.message[:200]})
     return out
+
+# ── RAG knowledge base (pgvector-ready; keyword search until embeddings land) ──
+@router.post("/rag/search")
+def rag_search(body: dict, db: Session = Depends(get_db),
+               user: dict = Depends(sec.get_current_user)):
+    q = (body.get("query") or "")[:500]
+    top_k = int(body.get("top_k") or 5)
+    chunks = db.query(models.DocChunk).filter(models.DocChunk.content.ilike(f"%{q}%")).limit(top_k).all()
+    return {"query": q,
+            "hits": [{"source": c.source, "title": c.title,
+                      "snippet": (c.content or "")[:400]} for c in chunks],
+            "mode": "keyword",
+            "note": "Vector cosine search activates once LLM-gateway embeddings populate doc_chunks.embedding."}
 
 # ── Integration stubs (SAP / LIMS / MES / CRM / IoT) ──
 @router.get("/integrations/status")

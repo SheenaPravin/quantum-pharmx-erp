@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://pharmx:pharmx@db:5432/pharmx
+      REDIS_URL: redis://redis:6379/0
+    depends_on: [db, redis]
+  web:
+    build: ./frontend
+    ports: ["3000:3000"]
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: pharmx
+      POSTGRES_PASSWORD: pharmx
+      POSTGRES_DB: pharmx
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+  opensearch:
+    image: opensearchproject/opensearch:2
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+    ports: ["9200:9200"]
+volumes:
+  pgdata:

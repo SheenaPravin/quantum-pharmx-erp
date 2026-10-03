@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+backend/pharmx.db
+node_modules/
+frontend/.next/
+frontend/out/
+dist/
+build/
+.DS_Store
+*.log

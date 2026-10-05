@@ -3,6 +3,7 @@ import { createTheme, ThemeProvider, CssBaseline, AppBar, Toolbar, Typography, B
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Link from "next/link";
 import { MODULES } from "@/lib/api";
+import Login from "@/components/Login";
 import { useState } from "react";
 
 const theme = createTheme({ palette: { mode: "light", primary: { main: "#0b3d62" }, secondary: { main: "#079992" } } });
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Button key={m.href} color="inherit" component={Link} href={m.href}>{m.label}</Button>
                 ))}
                 <Button color="inherit" component={Link} href="/botpharma">BotPharma™</Button>
+                <Login />
               </Toolbar>
             </AppBar>
             <Container maxWidth="lg"><Box py={3}>{children}</Box></Container>

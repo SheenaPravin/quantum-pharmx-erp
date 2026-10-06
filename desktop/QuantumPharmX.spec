@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_submodules
 
-ROOT = Path(SPECPATH).parent  # desktop/
+ROOT = Path(SPECPATH).resolve()  # desktop/ (absolute; SPECPATH may be relative)
 REPO = ROOT.parent
 BACKEND = REPO / "backend"
 WEB_OUT = REPO / "frontend" / "out"

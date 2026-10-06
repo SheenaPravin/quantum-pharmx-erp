@@ -1,0 +1,77 @@
+name: Build Windows desktop exe
+
+# PyInstaller can't cross-compile, so the .exe is built on Windows here.
+# Download the zip from the run's Artifacts, or push a `desktop-v*` tag
+# to attach it to a GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["desktop-v*"]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Build desktop web UI (same-origin API on 127.0.0.1:8000)
+        run: npm run build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements.txt pyinstaller
+
+      - name: Build exe
+        run: pyinstaller --clean --noconfirm desktop/QuantumPharmX.spec
+
+      - name: Smoke test (launch exe, hit API + pages)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\QuantumPharmX\QuantumPharmX.exe" `
+            -ArgumentList "--no-browser","--data-dir","smoke-data" -PassThru
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 24; $i++) {
+              try { Invoke-WebRequest http://127.0.0.1:8000/health -TimeoutSec 5 | Out-Null; $ok = $true; break }
+              catch { Start-Sleep 5 }
+            }
+            if (-not $ok) { throw "backend did not become healthy in time" }
+            foreach ($u in @("/", "/botpharma/", "/rnd/", "/api/v1/analytics/kpis")) {
+              $r = Invoke-WebRequest "http://127.0.0.1:8000$u" -UseBasicParsing
+              Write-Host "$u -> $($r.StatusCode)"
+            }
+            $login = Invoke-WebRequest http://127.0.0.1:8000/api/v1/auth/login -Method POST `
+              -ContentType "application/json" `
+              -Body '{"username":"admin@pharmx.local","password":"Admin123!"}' -UseBasicParsing
+            Write-Host "login -> $($login.StatusCode)"
+          } finally { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+
+      - name: Zip for download
+        shell: pwsh
+        run: Compress-Archive -Path dist\QuantumPharmX -DestinationPath QuantumPharmX-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuantumPharmX-windows-x64
+          path: QuantumPharmX-windows-x64.zip
+
+      - name: Attach to Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" `
+            --notes "Quantum PharmX desktop demo for Windows. Unzip and run QuantumPharmX.exe (login: admin@pharmx.local / Admin123!)." 2>$null
+          gh release upload "${{ github.ref_name }}" QuantumPharmX-windows-x64.zip --clobber

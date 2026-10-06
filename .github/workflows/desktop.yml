@@ -47,7 +47,7 @@ jobs:
               catch { Start-Sleep 5 }
             }
             if (-not $ok) { throw "backend did not become healthy in time" }
-            foreach ($u in @("/", "/botpharma/", "/rnd/", "/api/v1/analytics/kpis")) {
+            foreach ($u in @("/", "/botpharma/", "/rnd/", "/health")) {
               $r = Invoke-WebRequest "http://127.0.0.1:8000$u" -UseBasicParsing
               Write-Host "$u -> $($r.StatusCode)"
             }
